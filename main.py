@@ -42,7 +42,6 @@ class RichGptConsole:
 
     def clear_history(self):
         self.__message_history = [self.__system_prompt]
-        print(self.__message_history)
 
     def set_system_prompt(self, system_prompt):
         self.__system_prompt['content'] = system_prompt
@@ -53,13 +52,13 @@ if __name__ == '__main__':
     gpt = RichGptConsole()
     while True:
         prompt = input('[ User ]: ')
-        if prompt == 'exit':
+        if prompt == '!exit':
             break
-        elif prompt == 'clear':
+        elif prompt == '!clear':
             gpt.clear_history()
             continue
-        elif prompt.startswith('system'):
-            gpt.set_system_prompt(prompt[7:])
+        elif prompt.startswith('!system'):
+            gpt.set_system_prompt(prompt[8:])
             continue
         elif prompt == '':
             continue
