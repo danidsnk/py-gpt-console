@@ -1,48 +1,67 @@
-import sys
 import os
+
 import openai
+from rich.live import Live
+from rich.markdown import Markdown
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-message_history = [
-    # {'role':'system', 'content':''},
-]
 
+class RichGptConsole:
+    def __init__(self, system_prompt='You are helpful assistant'):
+        self.__system_prompt = {'role': 'system', 'content': system_prompt}
+        self.__message_history = [self.__system_prompt]
 
-def ai_request(text: str):
-    sys.stdout.write('Bot: ')
-    assistant_response = {}
-    user_request = {'role': 'user', 'content': text}
-    message_history.append(user_request)
-    res = ''
-    for response in openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=message_history,
-        # max_tokens=100,
-        stream=True,
-    ):
+    def __gpt_stream(self):
+        return openai.ChatCompletion.create(
+            model='gpt-3.5-turbo',
+            messages=self.__message_history,
+            # max_tokens=100,
+            stream=True,
+        )
+
+    def __get_part(self, response):
         if 'delta' in response.choices[0]:
             delta = response.choices[0].delta
-            if 'role' in delta:
-                assistant_response['role'] = delta.role
             if 'content' in delta:
-                sys.stdout.write(delta.content)
-                sys.stdout.flush()
-                res += delta.content
-    sys.stdout.write('\n')
+                return delta.content
+        return ''
 
-    assistant_response['content'] = res
-    message_history.append(assistant_response)
+    def __response_processing(self, prompt, live_rich):
+        self.__message_history.append({'role': 'user', 'content': prompt})
+        res = ''
+        for response in self.__gpt_stream():
+            res += self.__get_part(response)
+            live_rich.update(Markdown(res))
+
+        self.__message_history.append({'role': 'assistant', 'content': res})
+
+    def chat(self, prompt):
+        with Live(refresh_per_second=12) as live:
+            self.__response_processing(prompt, live)
+
+    def clear_history(self):
+        self.__message_history = [self.__system_prompt]
+        print(self.__message_history)
+
+    def set_system_prompt(self, system_prompt):
+        self.__system_prompt['content'] = system_prompt
+        self.clear_history()
 
 
 if __name__ == '__main__':
-    print('Bot started!')
+    gpt = RichGptConsole()
     while True:
-        text = input('User: ')
-        if text == 'exit':
+        prompt = input('[ User ]: ')
+        if prompt == 'exit':
             break
-        elif text == '':
+        elif prompt == 'clear':
+            gpt.clear_history()
             continue
-        ai_request(text)
-
-    print(message_history)
+        elif prompt.startswith('system'):
+            gpt.set_system_prompt(prompt[7:])
+            continue
+        elif prompt == '':
+            continue
+        print('[ Bot ]: ')
+        gpt.chat(prompt)
