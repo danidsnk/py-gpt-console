@@ -3,6 +3,7 @@ import os
 import openai
 from rich.live import Live
 from rich.markdown import Markdown
+from rich.panel import Panel
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
@@ -32,7 +33,7 @@ class RichGptConsole:
         res = ''
         for response in self.__gpt_stream():
             res += self.__get_part(response)
-            live_rich.update(Markdown(res))
+            live_rich.update(Panel.fit(Markdown(res), title='GPT response'))
 
         self.__message_history.append({'role': 'assistant', 'content': res})
 
@@ -62,5 +63,4 @@ if __name__ == '__main__':
             continue
         elif prompt == '':
             continue
-        print('[ Bot ]: ')
         gpt.chat(prompt)
