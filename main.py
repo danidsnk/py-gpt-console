@@ -53,13 +53,13 @@ if __name__ == '__main__':
     gpt = RichGptConsole()
     while True:
         prompt = input('[ User ]: ')
-        if prompt == '!exit':
-            break
-        elif prompt == '!clear':
-            gpt.clear_history()
-            continue
-        elif prompt.startswith('!system'):
-            gpt.set_system_prompt(prompt[8:])
+        if prompt.startswith('!'):
+            if prompt == '!exit':
+                break
+            elif prompt == '!clear':
+                gpt.clear_history()
+            elif prompt.startswith('!system'):
+                gpt.set_system_prompt(prompt[8:])
             continue
         elif prompt == '':
             continue
