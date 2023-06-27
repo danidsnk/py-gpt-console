@@ -33,11 +33,11 @@ class RichGptConsole:
         res = ''
         for response in self.__gpt_stream():
             res += self.__get_part(response)
-            live_rich.update(Panel.fit(Markdown(res), title='GPT response'))
+            live_rich.update(Panel(Markdown(res), title='GPT response'))
 
         self.__message_history.append({'role': 'assistant', 'content': res})
 
-    def chat(self, prompt):
+    def rich_chat(self, prompt):
         with Live(refresh_per_second=12) as live:
             self.__response_processing(prompt, live)
 
@@ -47,6 +47,9 @@ class RichGptConsole:
     def set_system_prompt(self, system_prompt):
         self.__system_prompt['content'] = system_prompt
         self.clear_history()
+
+    def raw_last_response(self):
+        return self.__message_history[-1]['content']
 
 
 if __name__ == '__main__':
@@ -58,9 +61,23 @@ if __name__ == '__main__':
                 break
             elif prompt == '!clear':
                 gpt.clear_history()
-            elif prompt.startswith('!system'):
-                gpt.set_system_prompt(prompt[8:])
-            continue
+                continue
+            elif prompt == '!system':
+                system_prompt = input('[ System ]: ')
+                gpt.set_system_prompt(system_prompt)
+                continue
+            elif prompt == '!raw':
+                print(gpt.raw_last_response())
+                continue
+            elif prompt == '!multi':
+                multiline = []
+                while True:
+                    try:
+                        line = input()
+                    except EOFError:
+                        break
+                    multiline.append(line)
+                prompt = '\n'.join(multiline)
         elif prompt == '':
             continue
-        gpt.chat(prompt)
+        gpt.rich_chat(prompt)
