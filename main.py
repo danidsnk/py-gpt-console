@@ -54,6 +54,8 @@ class ChatGpt:
         self.clear_history()
 
     def raw_last_response(self) -> str:
+        if len(self.__message_history) == 1:
+            return ''
         return self.__message_history[-1]['content']
 
 
