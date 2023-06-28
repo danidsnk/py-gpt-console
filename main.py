@@ -1,6 +1,7 @@
 import os
 
 import openai
+from openai.error import OpenAIError
 from rich.live import Live
 from rich.markdown import Markdown
 from rich.panel import Panel
@@ -37,9 +38,15 @@ class RichGptConsole:
 
         self.__message_history.append({'role': 'assistant', 'content': res})
 
+    def __print_api_error(self, error: OpenAIError):
+        print(f'Error: {error}')
+
     def rich_chat(self, prompt: str):
-        with Live(refresh_per_second=12) as live:
-            self.__response_processing(prompt, live)
+        try:
+            with Live(refresh_per_second=12) as live:
+                self.__response_processing(prompt, live)
+        except OpenAIError as e:
+            self.__print_api_error(e)
 
     def clear_history(self):
         self.__message_history = [self.__system_prompt]
