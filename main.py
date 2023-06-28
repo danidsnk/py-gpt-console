@@ -21,7 +21,7 @@ class RichGptConsole:
             stream=True,
         )
 
-    def __get_part(self, response):
+    def __get_token(self, response):
         if 'delta' in response.choices[0]:
             delta = response.choices[0].delta
             if 'content' in delta:
@@ -31,8 +31,8 @@ class RichGptConsole:
     def __response_processing(self, prompt: str, live_rich: Live):
         self.__message_history.append({'role': 'user', 'content': prompt})
         res = ''
-        for response in self.__gpt_stream():
-            res += self.__get_part(response)
+        for chunk in self.__gpt_stream():
+            res += self.__get_token(chunk)
             live_rich.update(Panel(Markdown(res), title='GPT response'))
 
         self.__message_history.append({'role': 'assistant', 'content': res})
