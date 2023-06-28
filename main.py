@@ -71,7 +71,7 @@ class _Commands:
                 self.__gpt.clear_history()
             case '!system':
                 sysprompt = input('[ System ]: ')
-                if '!multi':
+                if '!multi' == sysprompt:
                     sysprompt = self.__multiline_input()
                 if sysprompt:
                     self.__gpt.set_system_prompt(sysprompt)
