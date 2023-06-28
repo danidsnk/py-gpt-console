@@ -9,7 +9,7 @@ from rich.panel import Panel
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 
-class RichGptConsole:
+class ChatGpt:
     def __init__(self, system_prompt: str = 'You are helpful assistant'):
         self.__system_prompt = {'role': 'system', 'content': system_prompt}
         self.__message_history = [self.__system_prompt]
@@ -29,22 +29,20 @@ class RichGptConsole:
                 return delta.content
         return ''
 
-    def __response_processing(self, prompt: str, live_rich: Live):
-        self.__message_history.append({'role': 'user', 'content': prompt})
-        res = ''
-        for chunk in self.__gpt_stream():
-            res += self.__get_token(chunk)
-            live_rich.update(Panel(Markdown(res), title='GPT response'))
-
-        self.__message_history.append({'role': 'assistant', 'content': res})
-
     def __print_api_error(self, error: OpenAIError):
-        print(f'Error: {error}')
+        print(f'OpenAIError: {error}')
 
-    def rich_chat(self, prompt: str):
+    def chat_stream(self, prompt: str):
+        self.__message_history.append({'role': 'user', 'content': prompt})
         try:
-            with Live(refresh_per_second=12) as live:
-                self.__response_processing(prompt, live)
+            res = ''
+            for chunk in self.__gpt_stream():
+                token = self.__get_token(chunk)
+                res += token
+                yield token
+
+            self.__message_history.append({'role': 'assistant',
+                                           'content': res})
         except OpenAIError as e:
             self.__print_api_error(e)
 
@@ -59,9 +57,22 @@ class RichGptConsole:
         return self.__message_history[-1]['content']
 
 
-class _Commands:
-    def __init__(self, gpt_console: RichGptConsole):
-        self.__gpt: RichGptConsole = gpt_console
+SYSTEM_PREFIX = '[ System ]: '
+USER_PREFIX = '[ User ]: '
+BOT_PREFIX = '[ Bot ]: '
+
+
+def rich_chat(gpt: ChatGpt, prompt: str):
+    with Live(refresh_per_second=12) as live:
+        response = ''
+        for token in gpt.chat_stream(prompt):
+            response += token
+            live.update(Panel(Markdown(response), title='GPT response'))
+
+
+class ChatCommand:
+    def __init__(self, gpt_console: ChatGpt):
+        self.__gpt: ChatGpt = gpt_console
 
     def __call__(self, command: str) -> bool:
         match command:
@@ -70,18 +81,17 @@ class _Commands:
             case '!clear':
                 self.__gpt.clear_history()
             case '!system':
-                sysprompt = input('[ System ]: ')
+                sysprompt = input(SYSTEM_PREFIX)
                 if '!multi' == sysprompt:
                     sysprompt = self.__multiline_input()
                 if sysprompt:
                     self.__gpt.set_system_prompt(sysprompt)
             case '!raw':
-                print(self.__gpt.raw_last_response())
+                print(BOT_PREFIX + self.__gpt.raw_last_response())
             case '!multi':
                 multiline = self.__multiline_input()
                 if multiline:
-                    self.__gpt.rich_chat(multiline)
-
+                    rich_chat(self.__gpt, multiline)
         return True
 
     def __multiline_input(self) -> str:
@@ -96,14 +106,17 @@ class _Commands:
 
 
 if __name__ == '__main__':
-    gpt = RichGptConsole()
-    command = _Commands(gpt)
+    gpt = ChatGpt()
+    command = ChatCommand(gpt)
     while True:
-        prompt = input('[ User ]: ')
-        if prompt.startswith('!'):
-            if not command(prompt):
-                break
-            continue
-        elif prompt == '':
-            continue
-        gpt.rich_chat(prompt)
+        try:
+            prompt = input(USER_PREFIX)
+            if prompt.startswith('!'):
+                if not command(prompt):
+                    break
+                continue
+            elif prompt == '':
+                continue
+            rich_chat(gpt, prompt)
+        except Exception as e:
+            print(f'Unexpected error: {e}')
