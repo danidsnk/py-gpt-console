@@ -76,11 +76,13 @@ def rich_chat(gpt: ChatGpt, prompt: str):
 
 def multiline_input(prefix: str) -> str:
     sys.stdout.write(prefix)
-    lines = []
-    while not keyboard.is_pressed('ctrl'):
-        line = input()
-        lines.append(line)
-    return '\n'.join(lines)
+    sys.stdout.flush()
+    lines = ''
+    for line in sys.stdin:
+        lines += line
+        if keyboard.is_pressed('ctrl'):
+            break
+    return lines
 
 
 class ChatCommand:
@@ -109,7 +111,7 @@ if __name__ == '__main__':
         try:
             prompt = multiline_input(USER_PREFIX)
             if prompt.startswith('!'):
-                if not command(prompt):
+                if not command(prompt.strip()):
                     break
                 continue
             if prompt.strip() == '':
