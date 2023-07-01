@@ -1,5 +1,7 @@
 import os
+import sys
 
+import keyboard
 import openai
 from openai.error import OpenAIError
 from rich.live import Live
@@ -72,6 +74,15 @@ def rich_chat(gpt: ChatGpt, prompt: str):
             live.update(Panel(Markdown(response), title='GPT response'))
 
 
+def multiline_input(prefix: str) -> str:
+    sys.stdout.write(prefix)
+    lines = []
+    while not keyboard.is_pressed('ctrl'):
+        line = input()
+        lines.append(line)
+    return '\n'.join(lines)
+
+
 class ChatCommand:
     def __init__(self, gpt_console: ChatGpt):
         self.__gpt: ChatGpt = gpt_console
@@ -83,28 +94,12 @@ class ChatCommand:
             case '!clear':
                 self.__gpt.clear_history()
             case '!system':
-                sysprompt = input(SYSTEM_PREFIX)
-                if '!multi' == sysprompt:
-                    sysprompt = self.__multiline_input()
+                sysprompt = multiline_input(SYSTEM_PREFIX)
                 if sysprompt:
                     self.__gpt.set_system_prompt(sysprompt)
             case '!raw':
                 print(BOT_PREFIX + self.__gpt.raw_last_response())
-            case '!multi':
-                multiline = self.__multiline_input()
-                if multiline:
-                    rich_chat(self.__gpt, multiline)
         return True
-
-    def __multiline_input(self) -> str:
-        lines = []
-        while True:
-            try:
-                line = input()
-            except EOFError:
-                break
-            lines.append(line)
-        return '\n'.join(lines)
 
 
 if __name__ == '__main__':
@@ -112,12 +107,12 @@ if __name__ == '__main__':
     command = ChatCommand(gpt)
     while True:
         try:
-            prompt = input(USER_PREFIX)
+            prompt = multiline_input(USER_PREFIX)
             if prompt.startswith('!'):
                 if not command(prompt):
                     break
                 continue
-            elif prompt == '':
+            if prompt.strip() == '':
                 continue
             rich_chat(gpt, prompt)
         except Exception as e:
