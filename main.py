@@ -47,6 +47,7 @@ class ChatGpt:
                                            'content': res})
         except OpenAIError as e:
             self.__print_api_error(e)
+            self.__message_history.pop()
 
     def clear_history(self):
         self.__message_history = [self.__system_prompt]
