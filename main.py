@@ -55,7 +55,7 @@ class ChatGpt:
         self.__system_prompt['content'] = system_prompt
         self.clear_history()
 
-    def raw_last_response(self) -> str:
+    def last_response(self) -> str:
         if len(self.__message_history) == 1:
             return ''
         return self.__message_history[-1]['content']
@@ -100,7 +100,7 @@ class ChatCommand:
                 if sysprompt:
                     self.__gpt.set_system_prompt(sysprompt)
             case '!raw':
-                print(BOT_PREFIX + self.__gpt.raw_last_response())
+                print(BOT_PREFIX + self.__gpt.last_response())
         return True
 
 
